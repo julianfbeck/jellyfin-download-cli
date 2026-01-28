@@ -1,0 +1,64 @@
+version: 2
+
+project_name: jellyfin-download
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: jellyfin-download
+    main: .
+    binary: jellyfin-download
+    env:
+      - CGO_ENABLED=1
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -X github.com/julianfbeck/jellyfin-download-cli/cmd.version={{.Version}}
+    goos:
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+
+universal_binaries:
+  - id: jellyfin-download-macos
+    ids:
+      - jellyfin-download
+    name_template: jellyfin-download
+    replace: true
+
+archives:
+  - id: default
+    format: tar.gz
+    name_template: >-
+      {{ .ProjectName }}-{{ if eq .Os "darwin" }}macos{{ else }}{{ .Os }}{{ end }}-{{ if eq .Arch "all" }}universal{{ else }}{{ .Arch }}{{ end }}
+    files:
+      - LICENSE
+      - README.md
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+
+brews:
+  - name: jellyfin-download
+    repository:
+      owner: julianfbeck
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    homepage: "https://github.com/julianfbeck/jellyfin-download-cli"
+    description: "CLI to download Jellyfin movies and episodes"
+    license: "MIT"
+    install: |
+      bin.install "jellyfin-download"
+    test: |
+      system "#{bin}/jellyfin-download", "--version"
