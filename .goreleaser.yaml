@@ -56,7 +56,7 @@ brews:
       name: homebrew-tap
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
     homepage: "https://github.com/julianfbeck/jellyfin-download-cli"
-    description: "CLI to download Jellyfin movies and episodes"
+    description: "Jellyfin downloader with Plex-ready folder layout"
     license: "MIT"
     install: |
       bin.install "jellyfin-download"

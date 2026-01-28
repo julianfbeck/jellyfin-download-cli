@@ -61,9 +61,9 @@ var downloadMovieCmd = &cobra.Command{
 		}
 
 		return runDownloadItems(client, storeDir, []api.Item{*item}, downloadOptions{
-			Rate:    resolveRate(cfg.DefaultRate),
-			Output:  downloadOutput,
-			DryRun:  dryRun,
+			Rate:   resolveRate(cfg.DefaultRate),
+			Output: downloadOutput,
+			DryRun: dryRun,
 		})
 	},
 }
@@ -132,10 +132,10 @@ var downloadSeriesCmd = &cobra.Command{
 		}
 
 		return runDownloadItems(client, storeDir, filtered, downloadOptions{
-			Rate:    resolveRate(cfg.DefaultRate),
-			Output:  downloadOutput,
-			DryRun:  dryRun,
-			Series:  id,
+			Rate:   resolveRate(cfg.DefaultRate),
+			Output: downloadOutput,
+			DryRun: dryRun,
+			Series: id,
 		})
 	},
 }
@@ -159,9 +159,9 @@ var downloadEpisodeCmd = &cobra.Command{
 		}
 
 		return runDownloadItems(client, storeDir, []api.Item{*item}, downloadOptions{
-			Rate:    resolveRate(cfg.DefaultRate),
-			Output:  downloadOutput,
-			DryRun:  dryRun,
+			Rate:   resolveRate(cfg.DefaultRate),
+			Output: downloadOutput,
+			DryRun: dryRun,
 		})
 	},
 }
@@ -191,10 +191,10 @@ func init() {
 }
 
 type downloadOptions struct {
-	Rate    string
-	Output  string
-	DryRun  bool
-	Series  string
+	Rate         string
+	Output       string
+	DryRun       bool
+	Series       string
 	OverridePath string
 }
 
@@ -250,9 +250,7 @@ func runDownloadItems(client *api.Client, storeDir string, items []api.Item, opt
 func downloadItem(client *api.Client, storeDB *store.Store, item api.Item, outputDir string, limiter *rate.Limiter, opts downloadOptions) error {
 	path := opts.OverridePath
 	if path == "" {
-		name := buildItemFilename(item)
-		ext := fileExtension(item.Path)
-		path = download.DefaultDownloadPath(outputDir, name, ext)
+		path = buildDefaultPath(outputDir, item)
 	}
 
 	record := &store.Download{
@@ -493,6 +491,27 @@ func buildItemFilename(item api.Item) string {
 		return fmt.Sprintf("%s (%d)", item.Name, item.ProductionYear)
 	}
 	return item.Name
+}
+
+func buildDefaultPath(root string, item api.Item) string {
+	ext := fileExtension(item.Path)
+	if item.Type == "Episode" {
+		series := item.SeriesName
+		if series == "" {
+			series = "Series"
+		}
+		seriesFolder := download.SanitizeFileName(series)
+		seasonFolder := "Season 00"
+		if item.ParentIndexNumber > 0 {
+			seasonFolder = fmt.Sprintf("Season %02d", item.ParentIndexNumber)
+		}
+		fileName := download.SanitizeFileName(buildItemFilename(item)) + ext
+		return filepath.Join(root, seriesFolder, seasonFolder, fileName)
+	}
+
+	movieName := download.SanitizeFileName(buildItemFilename(item))
+	fileName := movieName + ext
+	return filepath.Join(root, movieName, fileName)
 }
 
 func fileExtension(path string) string {
